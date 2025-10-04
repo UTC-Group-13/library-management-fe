@@ -1,10 +1,10 @@
-import React, {useEffect, useState} from "react";
-import {Button, DatePicker, Form, Input, message, Modal, Popconfirm, Space, Table,} from "antd";
-import {authorService} from "../api/authorService";
-import {DeleteOutlined, EditOutlined, PlusOutlined} from "@ant-design/icons";
+import React, { useEffect, useState } from "react";
+import { Button, DatePicker, Form, Input, message, Modal, Popconfirm, Space, Table, } from "antd";
+import { authorService } from "../api/authorService";
+import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 
-const {Search} = Input;
+const { Search } = Input;
 
 export default function AuthorPage() {
     const [messageApi, contextHolder] = message.useMessage(); // ✅ Tạo instance message
@@ -124,10 +124,10 @@ export default function AuthorPage() {
 
     // === CỘT BẢNG ===
     const columns = [
-        {title: "ID", dataIndex: "id", key: "id", width: 80},
-        {title: "Họ và tên", dataIndex: "fullName", key: "fullName"},
-        {title: "Email", dataIndex: "email", key: "email"},
-        {title: "Quốc tịch", dataIndex: "nationality", key: "nationality"},
+        { title: "ID", dataIndex: "id", key: "id", width: 80 },
+        { title: "Họ và tên", dataIndex: "fullName", key: "fullName" },
+        { title: "Email", dataIndex: "email", key: "email" },
+        { title: "Quốc tịch", dataIndex: "nationality", key: "nationality" },
         {
             title: "Hành động",
             key: "action",
@@ -136,7 +136,7 @@ export default function AuthorPage() {
                 <Space>
                     <Button
                         type="link"
-                        icon={<EditOutlined/>}
+                        icon={<EditOutlined />}
                         onClick={() => handleEdit(record)}
                     >
                         Sửa
@@ -147,7 +147,7 @@ export default function AuthorPage() {
                         okText="Xóa"
                         cancelText="Hủy"
                     >
-                        <Button danger type="link" icon={<DeleteOutlined/>}>
+                        <Button danger type="link" icon={<DeleteOutlined />}>
                             Xóa
                         </Button>
                     </Popconfirm>
@@ -171,9 +171,9 @@ export default function AuthorPage() {
                     allowClear
                     enterButton="Tìm kiếm"
                     onSearch={handleSearch}
-                    style={{width: 300}}
+                    style={{ width: 300 }}
                 />
-                <Button type="primary" icon={<PlusOutlined/>} onClick={handleAdd}>
+                <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
                     Thêm tác giả
                 </Button>
             </Space>
@@ -207,25 +207,25 @@ export default function AuthorPage() {
                     <Form.Item
                         name="fullName"
                         label="Tên tác giả"
-                        rules={[{required: true, message: "Vui lòng nhập tên"}]}
+                        rules={[{ required: true, message: "Vui lòng nhập tên" }]}
                     >
-                        <Input/>
+                        <Input />
                     </Form.Item>
                     <Form.Item
                         name="birthDate"
                         label="Ngày sinh"
-                        rules={[{required: true, message: "Chọn ngày sinh"}]}
+                        rules={[{ required: true, message: "Chọn ngày sinh" }]}
                     >
-                        <DatePicker style={{width: "100%"}}/>
+                        <DatePicker style={{ width: "100%" }} />
                     </Form.Item>
                     <Form.Item name="nationality" label="Quốc tịch">
-                        <Input/>
+                        <Input />
                     </Form.Item>
                     <Form.Item name="biography" label="Tiểu sử">
-                        <Input.TextArea rows={3}/>
+                        <Input.TextArea rows={3} />
                     </Form.Item>
                     <Form.Item name="email" label="Email">
-                        <Input type="email"/>
+                        <Input type="email" />
                     </Form.Item>
                 </Form>
             </Modal>
