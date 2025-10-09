@@ -5,6 +5,7 @@ import {
     UserOutlined,
     TeamOutlined,
     AppstoreOutlined,
+    BankOutlined,
 } from "@ant-design/icons";
 
 export default function Sidebar({ selectedKey, onSelect }) {
@@ -13,6 +14,7 @@ export default function Sidebar({ selectedKey, onSelect }) {
         { key: "authors", icon: <UserOutlined />, label: "Quản lý tác giả" },
         { key: "students", icon: <TeamOutlined />, label: "Quản lý sinh viên" },
         { key: "categories", icon: <AppstoreOutlined />, label: "Quản lý danh mục" },
+        { key: "publishers", icon: <BankOutlined />, label: "Quản lý nhà xuất bản" },
     ];
 
     return (
