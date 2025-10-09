@@ -42,4 +42,4 @@ jobs:
               -p 5173:5173 \
               library-management:latest
 
-            echo "✅ Deploy v2 thành công! App đang chạy tại http://<server-ip>:5173"
+            echo "✅ Deploy v3 thành công! App đang chạy tại http://<server-ip>:5173"
