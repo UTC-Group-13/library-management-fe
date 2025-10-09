@@ -41,4 +41,4 @@ jobs:
               -p 5173:5173 \
               library-frontend:latest
 
-            echo "✅ Deploy thành công! App đang chạy tại http://<server-ip>:5173"
+            echo "✅ Deploy v1 thành công! App đang chạy tại http://<server-ip>:5173"
