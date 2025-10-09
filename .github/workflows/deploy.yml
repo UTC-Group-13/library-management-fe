@@ -19,7 +19,6 @@ jobs:
           username: ${{ secrets.SERVER_USER }}
           password: ${{ secrets.SERVER_PASS }}
           script: |
-            set -e  # ✅ DỪNG NGAY KHI CÓ LỖI
             
             echo "=== 🚀 Triển khai Frontend React (Vite, port 5173) ==="
 

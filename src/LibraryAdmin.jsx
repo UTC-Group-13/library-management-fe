@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { Layout } from "antd";
+import React, {useState} from "react";
+import {Layout} from "antd";
 import Sidebar from "./components/Sidebar";
 import BookPage from "./pages/BookPage";
 import AuthorPage from "./pages/AuthorPage";
@@ -7,30 +7,30 @@ import StudentPage from "./pages/StudentPage";
 import CategoryPage from "./pages/CategoryPage";
 import PublisherPage from "./pages/PublisherPage";
 
-const { Sider, Content, Header } = Layout;
+const {Sider, Content, Header} = Layout;
 
-export default function LibraryAdmin(){
+export default function LibraryAdmin() {
     const [selected, setSelected] = useState("students");
 
     const renderContent = () => {
         switch (selected) {
             case "books":
-                return <BookPage />;
+                return <BookPage/>;
             case "authors":
-                return <AuthorPage />;
+                return <AuthorPage/>;
             case "students":
-                return <StudentPage />;
+                return <StudentPage/>;
             case "categories":
-                return <CategoryPage />;
+                return <CategoryPage/>;
             case "publishers":
-                return <PublisherPage />;
+                return <PublisherPage/>;
             default:
                 return null;
         }
     };
 
     return (
-        <Layout style={{ minHeight: "100vh" }}>
+        <Layout style={{minHeight: "100vh"}}>
             <Sider theme="light" width={220}>
                 <div
                     style={{
@@ -43,7 +43,7 @@ export default function LibraryAdmin(){
                 >
                     Thư viện
                 </div>
-                <Sidebar selectedKey={selected} onSelect={setSelected} />
+                <Sidebar selectedKey={selected} onSelect={setSelected}/>
             </Sider>
             <Layout>
                 <Header
@@ -56,10 +56,10 @@ export default function LibraryAdmin(){
                     }}
                 >
                     Quản lý {selected === "students" ? "sinh viên" :
-                        selected === "books" ? "sách" :
-                            selected === "authors" ? "tác giả" : "danh mục"}
+                    selected === "books" ? "sách" :
+                        selected === "authors" ? "tác giả" : "danh mục"}
                 </Header>
-                <Content style={{ padding: 24 }}>{renderContent()}</Content>
+                <Content style={{padding: 24}}>{renderContent()}</Content>
             </Layout>
         </Layout>
     );
