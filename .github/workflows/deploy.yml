@@ -21,7 +21,7 @@ jobs:
           script: |
             echo "=== 🚀 Triển khai Frontend React (Vite, port 5173) ==="
 
-            cd /home/utc/library-frontend
+            cd /home/utc/library-frontend-fe
 
             echo ">>> Pull code mới nhất"
             git reset --hard
@@ -41,4 +41,4 @@ jobs:
               -p 5173:5173 \
               library-frontend:latest
 
-            echo "✅ Deploy v1 thành công! App đang chạy tại http://<server-ip>:5173"
+            echo "✅ Deploy v2 thành công! App đang chạy tại http://<server-ip>:5173"
