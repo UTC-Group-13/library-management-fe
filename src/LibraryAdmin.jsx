@@ -9,7 +9,7 @@ import PublisherPage from "./pages/PublisherPage";
 
 const { Sider, Content, Header } = Layout;
 
-export default function LibraryAdmin() {
+export default function LibraryAdmin(){
     const [selected, setSelected] = useState("students");
 
     const renderContent = () => {
