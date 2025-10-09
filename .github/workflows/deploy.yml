@@ -21,24 +21,24 @@ jobs:
           script: |
             echo "=== 🚀 Triển khai Frontend React (Vite, port 5173) ==="
 
-            cd /home/utc/library-frontend-fe
+            cd /home/utc/library-management-fe
 
             echo ">>> Pull code mới nhất"
             git reset --hard
             git pull origin master
 
             echo ">>> Stop & remove container cũ"
-            docker stop library-frontend || true
-            docker rm library-frontend || true
-            docker rmi library-frontend:latest || true
+            docker stop library-management || true
+            docker rm library-management || true
+            docker rmi library-management:latest || true
 
             echo ">>> Build Docker image mới"
-            docker build -t library-frontend:latest .
+            docker build -t library-management:latest .
 
             echo ">>> Run container mới (port 5173)"
             docker run -d \
-              --name library-frontend \
+              --name library-management \
               -p 5173:5173 \
-              library-frontend:latest
+              library-management:latest
 
             echo "✅ Deploy v2 thành công! App đang chạy tại http://<server-ip>:5173"
