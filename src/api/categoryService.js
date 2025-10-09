@@ -1,6 +1,6 @@
 import axios from "axios";
-const BASE_URL = "http://localhost:8080/api/categories";
-// const BASE_URL = "http://160.30.113.40:8080/api/categories";
+// const BASE_URL = "http://localhost:8080/api/categories";
+const BASE_URL = "http://160.30.113.40:8080/api/categories";
 
 export const categoryService = {
     /**
