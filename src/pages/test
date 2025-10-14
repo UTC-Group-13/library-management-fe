@@ -1,35 +1,20 @@
 import React, { useEffect, useState } from "react";
-import {
-    Table,
-    Input,
-    Button,
-    Space,
-    message,
-    Form,
-    Modal,
-    DatePicker,
-    Popconfirm,
-} from "antd";
-
-import { authorService } from "../api/authorService";
-import { PlusOutlined, EditOutlined, DeleteOutlined } from "@ant-design/icons";
+import { Button, DatePicker, Form, Input, message, Modal, Popconfirm, Space, Table, } from "antd";
+import { bookService } from "../api/bookService";
+import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 
 const { Search } = Input;
-message.config({
-    top: 100,
-    duration: 2,
-    maxCount: 3,
-});
-export default function AuthorPage() {
+
+export default function BookPage() {
+    const [messageApi, contextHolder] = message.useMessage(); // ✅ Tạo instance message
+
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [pagination, setPagination] = useState({
         current: 1,
         pageSize: 10,
         total: 0,
-        sortBy: "id",
-        sortDir: "desc",
     });
     const [keyword, setKeyword] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -38,28 +23,26 @@ export default function AuthorPage() {
     const [form] = Form.useForm();
 
     // === GỌI API PHÂN TRANG ===
-    const fetchData = async (page = 1, size = 10, keywordValue = "") => {
+    const fetchData = async (page = 1, size = 10, searchValue = "") => {
         setLoading(true);
         try {
-            const res = await authorService.search({
+            const res = await bookService.search({
                 page: page - 1,
                 size,
-                search: keywordValue || "",
+                search: searchValue || "",
                 sortBy: "id",
                 sortDir: "desc",
             });
 
             setData(res.content || []);
             setPagination({
-                current: res.pageable.pageNumber + 1,
-                pageSize: res.pageable.pageSize,
-                total: res.totalElements,
-                sortBy: "id",
-                sortDir: "desc",
+                current: res.pageable?.pageNumber + 1 || 1,
+                pageSize: res.pageable?.pageSize || 10,
+                total: res.totalElements || 0,
             });
         } catch (error) {
             console.error(error);
-            message.error("❌ Không thể tải dữ liệu tác giả");
+            messageApi.error("❌ Không thể tải dữ liệu sách");
         } finally {
             setLoading(false);
         }
@@ -78,6 +61,7 @@ export default function AuthorPage() {
     // === THÊM MỚI ===
     const handleAdd = () => {
         setIsEdit(false);
+        setEditingRecord(null);
         form.resetFields();
         setIsModalOpen(true);
     };
@@ -96,12 +80,14 @@ export default function AuthorPage() {
     // === XOÁ ===
     const handleDelete = async (id) => {
         try {
-            await authorService.delete(id);
-            fetchData(pagination.current, pagination.pageSize, keyword);
-            message.success("Xóa tác giả thành công!");
+            await bookService.delete(id);
+            messageApi.success("🗑️ Xóa sách thành công!");
+            await fetchData(pagination.current, pagination.pageSize, keyword);
         } catch (error) {
-            message.error("Lỗi khi xóa tác giả!");
             console.error(error);
+            messageApi.error(
+                error?.response?.data?.message || "❌ Lỗi khi xóa sách!"
+            );
         }
     };
 
@@ -118,35 +104,49 @@ export default function AuthorPage() {
             };
 
             if (isEdit && editingRecord) {
-                await authorService.update(editingRecord.id, payload);
-                message.success("Cập nhật tác giả thành công!");
-                console.log("Cập nhật tác giả thành công!")
+                await bookService.update(editingRecord.id, payload);
+                messageApi.success("✅ Cập nhật sách thành công!");
             } else {
-                await authorService.create(payload);
-                message.success("Thêm tác giả thành công!");
-                console.log("Cập nhật tác giả thành công!")
+                await bookService.create(payload);
+                messageApi.success("✅ Thêm sách thành công!");
             }
 
-            setIsModalOpen(false);
+            await fetchData(pagination.current, pagination.pageSize, keyword);
             form.resetFields();
-            fetchData(pagination.current, pagination.pageSize, keyword);
-            message.success("Thêm tác giả thành công!");
-            console.log("Cập nhật tác giả thành công!22")
+            setIsModalOpen(false);
         } catch (error) {
-            message.error("Lỗi khi lưu tác giả!");
             console.error(error);
+            messageApi.error(
+                error?.response?.data?.message || "❌ Lỗi khi lưu sách!"
+            );
         }
     };
 
     // === CỘT BẢNG ===
     const columns = [
         { title: "ID", dataIndex: "id", key: "id", width: 80 },
-        { title: "Họ và tên", dataIndex: "fullName", key: "fullName" },
-        { title: "Email", dataIndex: "email", key: "email" },
-        { title: "Quốc tịch", dataIndex: "nationality", key: "nationality" },
+        { title: "Tên sách", dataIndex: "title", key: "title" },
+        { title: "ISBN", dataIndex: "isbn", key: "isbn" },
+        { title: "Năm xuất bản", dataIndex: "publishYear", key: "publishYear", width: 120 },
+        { title: "Ngôn ngữ", dataIndex: "language", key: "language", width: 100 },
+        {
+            title: "Số lượng",
+            dataIndex: "quantity",
+            key: "quantity",
+            width: 100,
+            align: "center",
+        },
+        {
+            title: "Giá (VNĐ)",
+            dataIndex: "price",
+            key: "price",
+            width: 120,
+            align: "right",
+        },
         {
             title: "Hành động",
             key: "action",
+            width: 180,
             render: (_, record) => (
                 <Space>
                     <Button
@@ -173,6 +173,7 @@ export default function AuthorPage() {
 
     return (
         <div>
+            {contextHolder} {/* ✅ Bắt buộc có dòng này */}
             <Space
                 style={{
                     marginBottom: 16,
@@ -181,14 +182,14 @@ export default function AuthorPage() {
                 }}
             >
                 <Search
-                    placeholder="Tìm kiếm tác giả..."
+                    placeholder="Tìm kiếm sách..."
                     allowClear
                     enterButton="Tìm kiếm"
                     onSearch={handleSearch}
                     style={{ width: 300 }}
                 />
                 <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-                    Thêm tác giả
+                    Thêm sách
                 </Button>
             </Space>
 
@@ -202,23 +203,25 @@ export default function AuthorPage() {
                     pageSize: pagination.pageSize,
                     total: pagination.total,
                     showSizeChanger: true,
-                    showTotal: (total) => `Tổng ${total} tác giả`,
-                    onChange: (page, pageSize) => fetchData(page, pageSize, keyword),
+                    showTotal: (total) => `Tổng ${total} sách`,
+                    onChange: (page, pageSize) =>
+                        fetchData(page, pageSize, keyword),
                 }}
             />
 
             <Modal
-                title={isEdit ? "Cập nhật tác giả" : "Thêm tác giả"}
+                title={isEdit ? "Cập nhật sách" : "Thêm sách"}
                 open={isModalOpen}
                 onCancel={() => setIsModalOpen(false)}
                 onOk={handleSubmit}
                 okText="Lưu"
                 cancelText="Hủy"
+                destroyOnClose={true}
             >
                 <Form form={form} layout="vertical">
                     <Form.Item
                         name="fullName"
-                        label="Tên tác giả"
+                        label="Tên sách"
                         rules={[{ required: true, message: "Vui lòng nhập tên" }]}
                     >
                         <Input />

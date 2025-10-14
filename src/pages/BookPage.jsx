@@ -1,14 +1,34 @@
-import React, { useEffect, useState } from "react";
-import { Button, DatePicker, Form, Input, message, Modal, Popconfirm, Space, Table, } from "antd";
+import React, { useEffect, useState, useCallback } from "react";
+import {
+    Button,
+    Form,
+    Input,
+    message,
+    Modal,
+    Popconfirm,
+    Space,
+    Table,
+    Select,
+    Row,
+    Col,
+} from "antd";
+import {
+    DeleteOutlined,
+    EditOutlined,
+    PlusOutlined,
+} from "@ant-design/icons";
 import { bookService } from "../api/bookService";
-import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
-import dayjs from "dayjs";
+import { authorService } from "../api/authorService";
+import { categoryService } from "../api/categoryService";
+import { publisherService } from "../api/publisherService";
 
 const { Search } = Input;
+const { Option } = Select;
 
 export default function BookPage() {
-    const [messageApi, contextHolder] = message.useMessage(); // ✅ Tạo instance message
+    const [messageApi, contextHolder] = message.useMessage();
 
+    // === STATE CƠ BẢN ===
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [pagination, setPagination] = useState({
@@ -22,7 +42,24 @@ export default function BookPage() {
     const [editingRecord, setEditingRecord] = useState(null);
     const [form] = Form.useForm();
 
-    // === GỌI API PHÂN TRANG ===
+    // === STATE DROPDOWN ===
+    const [authors, setAuthors] = useState([]);
+    const [categories, setCategories] = useState([]);
+    const [publishers, setPublishers] = useState([]);
+    const [loadingAuthors, setLoadingAuthors] = useState(false);
+    const [loadingCategories, setLoadingCategories] = useState(false);
+    const [loadingPublishers, setLoadingPublishers] = useState(false);
+
+    // === DEBOUNCE SEARCH ===
+    let debounceTimer = null;
+    const debounce = (func, delay = 500) => {
+        return (...args) => {
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => func(...args), delay);
+        };
+    };
+
+    // === API LOAD BOOKS ===
     const fetchData = async (page = 1, size = 10, searchValue = "") => {
         setLoading(true);
         try {
@@ -42,17 +79,56 @@ export default function BookPage() {
             });
         } catch (error) {
             console.error(error);
-            messageApi.error("❌ Không thể tải dữ liệu tác giả");
+            messageApi.error("❌ Không thể tải dữ liệu sách");
         } finally {
             setLoading(false);
         }
     };
 
+    // === API DROPDOWN SEARCH ===
+    const searchAuthors = async (keyword = "") => {
+        setLoadingAuthors(true);
+        try {
+            const res = await authorService.search({ page: 0, size: 10, search: keyword });
+            setAuthors(res.content || []);
+        } finally {
+            setLoadingAuthors(false);
+        }
+    };
+
+    const searchCategories = async (keyword = "") => {
+        setLoadingCategories(true);
+        try {
+            const res = await categoryService.search({ page: 0, size: 10, search: keyword });
+            setCategories(res.content || []);
+        } finally {
+            setLoadingCategories(false);
+        }
+    };
+
+    const searchPublishers = async (keyword = "") => {
+        setLoadingPublishers(true);
+        try {
+            const res = await publisherService.search({
+                page: 0,
+                size: 10,
+                search: keyword,
+            });
+            setPublishers(res.content || []);
+        } finally {
+            setLoadingPublishers(false);
+        }
+    };
+
+    // === LOAD DỮ LIỆU BAN ĐẦU ===
     useEffect(() => {
         fetchData();
+        searchAuthors();
+        searchCategories();
+        searchPublishers();
     }, []);
 
-    // === SEARCH ===
+    // === SEARCH BẢNG ===
     const handleSearch = (value) => {
         setKeyword(value);
         fetchData(1, pagination.pageSize, value);
@@ -70,10 +146,7 @@ export default function BookPage() {
     const handleEdit = (record) => {
         setIsEdit(true);
         setEditingRecord(record);
-        form.setFieldsValue({
-            ...record,
-            birthDate: record.birthDate ? dayjs(record.birthDate) : null,
-        });
+        form.setFieldsValue(record);
         setIsModalOpen(true);
     };
 
@@ -81,34 +154,38 @@ export default function BookPage() {
     const handleDelete = async (id) => {
         try {
             await bookService.delete(id);
-            messageApi.success("🗑️ Xóa tác giả thành công!");
+            messageApi.success("🗑️ Xóa sách thành công!");
             await fetchData(pagination.current, pagination.pageSize, keyword);
         } catch (error) {
             console.error(error);
-            messageApi.error(
-                error?.response?.data?.message || "❌ Lỗi khi xóa tác giả!"
-            );
+            messageApi.error(error?.response?.data?.message || "❌ Lỗi khi xóa sách!");
         }
     };
 
-    // === SUBMIT FORM (THÊM HOẶC CẬP NHẬT) ===
+    // === SUBMIT FORM ===
     const handleSubmit = async () => {
         try {
             const values = await form.validateFields();
             const payload = {
-                fullName: values.fullName,
-                birthDate: values.birthDate?.format("YYYY-MM-DD"),
-                nationality: values.nationality,
-                biography: values.biography,
-                email: values.email,
+                title: values.title,
+                isbn: values.isbn,
+                publishYear: values.publishYear,
+                language: values.language,
+                quantity: Number(values.quantity),
+                price: Number(values.price),
+                description: values.description,
+                coverImage: values.coverImage,
+                publisherId: values.publisherId,
+                categoryIds: values.categoryIds || [],
+                authorIds: values.authorIds || [],
             };
 
             if (isEdit && editingRecord) {
                 await bookService.update(editingRecord.id, payload);
-                messageApi.success("✅ Cập nhật tác giả thành công!");
+                messageApi.success("✅ Cập nhật sách thành công!");
             } else {
                 await bookService.create(payload);
-                messageApi.success("✅ Thêm tác giả thành công!");
+                messageApi.success("✅ Thêm sách thành công!");
             }
 
             await fetchData(pagination.current, pagination.pageSize, keyword);
@@ -116,18 +193,38 @@ export default function BookPage() {
             setIsModalOpen(false);
         } catch (error) {
             console.error(error);
-            messageApi.error(
-                error?.response?.data?.message || "❌ Lỗi khi lưu tác giả!"
-            );
+            messageApi.error(error?.response?.data?.message || "❌ Lỗi khi lưu sách!");
         }
     };
 
     // === CỘT BẢNG ===
     const columns = [
         { title: "ID", dataIndex: "id", key: "id", width: 80 },
-        { title: "Họ và tên", dataIndex: "fullName", key: "fullName" },
-        { title: "Email", dataIndex: "email", key: "email" },
-        { title: "Quốc tịch", dataIndex: "nationality", key: "nationality" },
+        { title: "Tên sách", dataIndex: "title", key: "title" },
+        { title: "ISBN", dataIndex: "isbn", key: "isbn" },
+        {
+            title: "Năm XB",
+            dataIndex: "publishYear",
+            key: "publishYear",
+            width: 100,
+            align: "center",
+        },
+        { title: "Ngôn ngữ", dataIndex: "language", key: "language", width: 100 },
+        {
+            title: "Số lượng",
+            dataIndex: "quantity",
+            key: "quantity",
+            width: 100,
+            align: "center",
+        },
+        {
+            title: "Giá (VNĐ)",
+            dataIndex: "price",
+            key: "price",
+            width: 120,
+            align: "right",
+            render: (price) => (price ? price.toLocaleString("vi-VN") : "—"),
+        },
         {
             title: "Hành động",
             key: "action",
@@ -158,7 +255,9 @@ export default function BookPage() {
 
     return (
         <div>
-            {contextHolder} {/* ✅ Bắt buộc có dòng này */}
+            {contextHolder}
+
+            {/* THANH TÌM KIẾM + NÚT THÊM */}
             <Space
                 style={{
                     marginBottom: 16,
@@ -167,17 +266,18 @@ export default function BookPage() {
                 }}
             >
                 <Search
-                    placeholder="Tìm kiếm tác giả..."
+                    placeholder="Tìm kiếm sách..."
                     allowClear
                     enterButton="Tìm kiếm"
                     onSearch={handleSearch}
                     style={{ width: 300 }}
                 />
                 <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
-                    Thêm tác giả
+                    Thêm sách
                 </Button>
             </Space>
 
+            {/* BẢNG DỮ LIỆU */}
             <Table
                 rowKey="id"
                 columns={columns}
@@ -188,46 +288,154 @@ export default function BookPage() {
                     pageSize: pagination.pageSize,
                     total: pagination.total,
                     showSizeChanger: true,
-                    showTotal: (total) => `Tổng ${total} tác giả`,
-                    onChange: (page, pageSize) =>
-                        fetchData(page, pageSize, keyword),
+                    showTotal: (total) => `Tổng ${total} sách`,
+                    onChange: (page, pageSize) => fetchData(page, pageSize, keyword),
                 }}
             />
 
+            {/* MODAL THÊM/SỬA */}
             <Modal
-                title={isEdit ? "Cập nhật tác giả" : "Thêm tác giả"}
+                title={isEdit ? "Cập nhật sách" : "Thêm sách"}
                 open={isModalOpen}
                 onCancel={() => setIsModalOpen(false)}
                 onOk={handleSubmit}
                 okText="Lưu"
                 cancelText="Hủy"
-                destroyOnClose={true}
+                destroyOnClose
+                width={700}
             >
-                <Form form={form} layout="vertical">
-                    <Form.Item
-                        name="fullName"
-                        label="Tên tác giả"
-                        rules={[{ required: true, message: "Vui lòng nhập tên" }]}
-                    >
-                        <Input />
-                    </Form.Item>
-                    <Form.Item
-                        name="birthDate"
-                        label="Ngày sinh"
-                        rules={[{ required: true, message: "Chọn ngày sinh" }]}
-                    >
-                        <DatePicker style={{ width: "100%" }} />
-                    </Form.Item>
-                    <Form.Item name="nationality" label="Quốc tịch">
-                        <Input />
-                    </Form.Item>
-                    <Form.Item name="biography" label="Tiểu sử">
-                        <Input.TextArea rows={3} />
-                    </Form.Item>
-                    <Form.Item name="email" label="Email">
-                        <Input type="email" />
+                <Form
+                    form={form}
+                    layout="vertical"
+                    colon={false}
+                    style={{ marginTop: 8 }}
+                >
+                    {/* === PHẦN 1: THÔNG TIN CƠ BẢN === */}
+                    <h4 style={{ color: "#1677ff", marginBottom: 12 }}>🧾 Thông tin chung</h4>
+                    <Row gutter={[16, 8]}>
+                        <Col span={12}>
+                            <Form.Item
+                                name="title"
+                                label="Tên sách"
+                                rules={[{ required: true, message: "Nhập tên sách" }]}
+                            >
+                                <Input placeholder="Nhập tên sách..." />
+                            </Form.Item>
+                        </Col>
+
+                        <Col span={12}>
+                            <Form.Item
+                                name="isbn"
+                                label="Mã ISBN"
+                                rules={[{ required: true, message: "Nhập mã ISBN" }]}
+                            >
+                                <Input placeholder="Nhập mã ISBN..." />
+                            </Form.Item>
+                        </Col>
+
+                        <Col span={8}>
+                            <Form.Item name="publishYear" label="Năm xuất bản">
+                                <Input type="number" placeholder="VD: 2025" />
+                            </Form.Item>
+                        </Col>
+
+                        <Col span={8}>
+                            <Form.Item name="language" label="Ngôn ngữ">
+                                <Input placeholder="VD: EN, VI..." />
+                            </Form.Item>
+                        </Col>
+
+                        <Col span={8}>
+                            <Form.Item name="quantity" label="Số lượng">
+                                <Input type="number" placeholder="VD: 10" />
+                            </Form.Item>
+                        </Col>
+
+                        <Col span={8}>
+                            <Form.Item name="price" label="Giá (VNĐ)">
+                                <Input type="number" placeholder="VD: 150000" />
+                            </Form.Item>
+                        </Col>
+                    </Row>
+
+                    {/* === PHẦN 2: DANH MỤC === */}
+                    <h4 style={{ color: "#1677ff", marginTop: 16, marginBottom: 12 }}>
+                        🏷️ Danh mục
+                    </h4>
+                    <Row gutter={[16, 8]}>
+                        <Col span={12}>
+                            <Form.Item name="publisherId" label="Nhà xuất bản">
+                                <Select
+                                    placeholder="Tìm nhà xuất bản..."
+                                    allowClear
+                                    showSearch
+                                    loading={loadingPublishers}
+                                    filterOption={false}
+                                    onSearch={debounce(searchPublishers)}
+                                >
+                                    {publishers.map((p) => (
+                                        <Select.Option key={p.id} value={p.id}>
+                                            {p.name}
+                                        </Select.Option>
+                                    ))}
+                                </Select>
+                            </Form.Item>
+                        </Col>
+
+                        <Col span={12}>
+                            <Form.Item name="categoryIds" label="Thể loại">
+                                <Select
+                                    mode="multiple"
+                                    placeholder="Tìm thể loại..."
+                                    allowClear
+                                    showSearch
+                                    loading={loadingCategories}
+                                    filterOption={false}
+                                    onSearch={debounce(searchCategories)}
+                                >
+                                    {categories.map((c) => (
+                                        <Select.Option key={c.id} value={c.id}>
+                                            {c.name}
+                                        </Select.Option>
+                                    ))}
+                                </Select>
+                            </Form.Item>
+                        </Col>
+
+                        <Col span={24}>
+                            <Form.Item name="authorIds" label="Tác giả">
+                                <Select
+                                    mode="multiple"
+                                    placeholder="Tìm tác giả..."
+                                    allowClear
+                                    showSearch
+                                    loading={loadingAuthors}
+                                    filterOption={false}
+                                    onSearch={debounce(searchAuthors)}
+                                >
+                                    {authors.map((a) => (
+                                        <Select.Option key={a.id} value={a.id}>
+                                            {a.fullName || a.name}
+                                        </Select.Option>
+                                    ))}
+                                </Select>
+                            </Form.Item>
+                        </Col>
+
+                        <Col span={24}>
+                            <Form.Item name="coverImage" label="Ảnh bìa (URL)">
+                                <Input placeholder="https://..." />
+                            </Form.Item>
+                        </Col>
+                    </Row>
+
+                    {/* === PHẦN 3: MÔ TẢ === */}
+                    <h4 style={{ color: "#1677ff", marginTop: 16, marginBottom: 12 }}>📝 Mô tả</h4>
+                    <Form.Item name="description">
+                        <Input.TextArea rows={4} placeholder="Nhập mô tả nội dung..." />
                     </Form.Item>
                 </Form>
+
             </Modal>
         </div>
     );
