@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Button, DatePicker, Form, Input, message, Modal, Popconfirm, Space, Table, } from "antd";
-import { authorService } from "../api/authorService";
+import { bookService } from "../api/bookService";
 import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
 
@@ -26,7 +26,7 @@ export default function BookPage() {
     const fetchData = async (page = 1, size = 10, searchValue = "") => {
         setLoading(true);
         try {
-            const res = await authorService.search({
+            const res = await bookService.search({
                 page: page - 1,
                 size,
                 search: searchValue || "",
@@ -80,7 +80,7 @@ export default function BookPage() {
     // === XOÁ ===
     const handleDelete = async (id) => {
         try {
-            await authorService.delete(id);
+            await bookService.delete(id);
             messageApi.success("🗑️ Xóa tác giả thành công!");
             await fetchData(pagination.current, pagination.pageSize, keyword);
         } catch (error) {
@@ -104,10 +104,10 @@ export default function BookPage() {
             };
 
             if (isEdit && editingRecord) {
-                await authorService.update(editingRecord.id, payload);
+                await bookService.update(editingRecord.id, payload);
                 messageApi.success("✅ Cập nhật tác giả thành công!");
             } else {
-                await authorService.create(payload);
+                await bookService.create(payload);
                 messageApi.success("✅ Thêm tác giả thành công!");
             }
 

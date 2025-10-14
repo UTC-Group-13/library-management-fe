@@ -6,6 +6,7 @@ import AuthorPage from "./pages/AuthorPage";
 import StudentPage from "./pages/StudentPage";
 import CategoryPage from "./pages/CategoryPage";
 import PublisherPage from "./pages/PublisherPage";
+import BookLoanPage from "./pages/BookLoanPage.jsx";
 
 const {Sider, Content, Header} = Layout;
 
@@ -24,6 +25,9 @@ export default function LibraryAdmin() {
                 return <CategoryPage/>;
             case "publishers":
                 return <PublisherPage/>;
+            case "bookLoans":
+                console.log("bookLoans")
+                return <BookLoanPage/>;
             default:
                 return null;
         }
@@ -55,9 +59,12 @@ export default function LibraryAdmin() {
                         fontWeight: 500,
                     }}
                 >
-                    Quản lý {selected === "students" ? "sinh viên" :
-                    selected === "books" ? "sách" :
-                        selected === "authors" ? "tác giả" : "danh mục"}
+                    Quản lý {
+                    selected === "students" ? "sinh viên" :
+                        selected === "books" ? "sách" :
+                            selected === "authors" ? "tác giả" :
+                                selected === "bookLoans" ? "mượn trả sách" :
+                                    "danh mục"}
                 </Header>
                 <Content style={{padding: 24}}>{renderContent()}</Content>
             </Layout>
