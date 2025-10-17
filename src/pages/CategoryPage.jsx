@@ -116,9 +116,20 @@ export default function CategoryPage() {
             setIsModalOpen(false);
         } catch (error) {
             console.error(error);
-            messageApi.error(
-                error?.response?.data?.message || "❌ Lỗi khi lưu danh mục!"
-            );
+            const apiErrors = error?.response?.data?.data;
+            if (apiErrors && typeof apiErrors === "object") {
+                const formErrors = Object.entries(apiErrors).map(([field, message]) => ({
+                    name: field,
+                    errors: [message],
+                }));
+                form.setFields(formErrors);
+                messageApi.error("❌ Dữ liệu không hợp lệ, vui lòng kiểm tra lại!");
+            } else {
+                // Trường hợp lỗi khác
+                messageApi.error(
+                    error?.response?.data?.message || "❌ Lỗi khi lưu tác giả!"
+                );
+            }
         }
     };
 
@@ -126,6 +137,7 @@ export default function CategoryPage() {
     const columns = [
         { title: "ID", dataIndex: "id", key: "id", width: 80 },
         { title: "Tên danh mục", dataIndex: "name", key: "name" },
+        { title: "Mô tả", dataIndex: "description", key: "description" },
         {
             title: "Hành động",
             key: "action",
@@ -208,6 +220,13 @@ export default function CategoryPage() {
                         rules={[{ required: true, message: "Vui lòng nhập tên" }]}
                     >
                         <Input />
+                    </Form.Item>
+                    <Form.Item
+                        name="description"
+                        label="Mô tả"
+                        rules={[{ required: true, message: "Vui lòng nhập mô tả" }]}
+                    >
+                        <Input.TextArea rows={3} placeholder="Nhập mô tả danh mục..." />
                     </Form.Item>
                 </Form>
             </Modal>

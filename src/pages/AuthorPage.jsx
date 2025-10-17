@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { Button, DatePicker, Form, Input, message, Modal, Popconfirm, Space, Table, } from "antd";
+import { Button, DatePicker, Form, Input, message, Modal, Popconfirm, Select, Space, Table, } from "antd";
 import { authorService } from "../api/authorService";
 import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
 import dayjs from "dayjs";
+import { NATIONALITIES } from "../constants/nationality";
 
 const { Search } = Input;
 
@@ -116,9 +117,21 @@ export default function AuthorPage() {
             setIsModalOpen(false);
         } catch (error) {
             console.error(error);
-            messageApi.error(
-                error?.response?.data?.message || "❌ Lỗi khi lưu tác giả!"
-            );
+            // ✅ Nếu lỗi từ API có dạng VALIDATION_ERROR
+            const apiErrors = error?.response?.data?.data;
+            if (apiErrors && typeof apiErrors === "object") {
+                const formErrors = Object.entries(apiErrors).map(([field, message]) => ({
+                    name: field,
+                    errors: [message],
+                }));
+                form.setFields(formErrors);
+                messageApi.error("❌ Dữ liệu không hợp lệ, vui lòng kiểm tra lại!");
+            } else {
+                // Trường hợp lỗi khác
+                messageApi.error(
+                    error?.response?.data?.message || "❌ Lỗi khi lưu tác giả!"
+                );
+            }
         }
     };
 
@@ -127,8 +140,15 @@ export default function AuthorPage() {
         { title: "ID", dataIndex: "id", key: "id", width: 80 },
         { title: "Họ và tên", dataIndex: "fullName", key: "fullName" },
         { title: "Email", dataIndex: "email", key: "email" },
-        { title: "Quốc tịch", dataIndex: "nationality", key: "nationality" },
         {
+            title: "Quốc tịch",
+            dataIndex: "nationality",
+            key: "nationality",
+            render: (code) => {
+                const nation = NATIONALITIES.find(n => n.code === code);
+                return nation ? nation.name : code;
+            },
+        }, {
             title: "Hành động",
             key: "action",
             width: 180,
@@ -218,13 +238,26 @@ export default function AuthorPage() {
                     >
                         <DatePicker style={{ width: "100%" }} />
                     </Form.Item>
-                    <Form.Item name="nationality" label="Quốc tịch">
-                        <Input />
+                    <Form.Item
+                        name="nationality"
+                        label="Quốc tịch"
+                        rules={[{ required: true, message: "Vui lòng chọn quốc tịch" }]}
+                    >
+                        <Select
+                            placeholder="Chọn quốc tịch"
+                            options={NATIONALITIES.map(n => ({ value: n.code, label: n.name }))}
+                        />
                     </Form.Item>
-                    <Form.Item name="biography" label="Tiểu sử">
+                    <Form.Item name="biography"
+                        label="Tiểu sử"
+                        rules={[{ required: true, message: "Tiểu sử không được để trống" }]}
+
+                    >
                         <Input.TextArea rows={3} />
                     </Form.Item>
-                    <Form.Item name="email" label="Email">
+                    <Form.Item name="email" label="Email"
+                        rules={[{ required: true, message: "Email không được để trống" }]}
+                    >
                         <Input type="email" />
                     </Form.Item>
                 </Form>
