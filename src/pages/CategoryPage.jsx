@@ -97,10 +97,7 @@ export default function CategoryPage() {
             const values = await form.validateFields();
             const payload = {
                 name: values.name,
-                birthDate: values.birthDate?.format("YYYY-MM-DD"),
-                nationality: values.nationality,
-                biography: values.biography,
-                email: values.email,
+                description: values.description,
             };
 
             if (isEdit && editingRecord) {
