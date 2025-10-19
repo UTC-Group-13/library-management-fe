@@ -1,40 +1,38 @@
-import React, {useState} from "react";
-import {Layout} from "antd";
+import React from "react";
+import { Layout } from "antd";
+import { Routes, Route, useNavigate, useLocation, Navigate } from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 import BookPage from "./pages/BookPage";
 import AuthorPage from "./pages/AuthorPage";
 import StudentPage from "./pages/StudentPage";
 import CategoryPage from "./pages/CategoryPage";
 import PublisherPage from "./pages/PublisherPage";
-import BookLoanPage from "./pages/BookLoanPage.jsx";
+import BookLoanPage from "./pages/BookLoanPage";
 
-const {Sider, Content, Header} = Layout;
+const { Sider, Content, Header } = Layout;
 
 export default function LibraryAdmin() {
-    const [selected, setSelected] = useState("students");
+    const navigate = useNavigate();
+    const location = useLocation();
 
-    const renderContent = () => {
-        switch (selected) {
-            case "books":
-                return <BookPage/>;
-            case "authors":
-                return <AuthorPage/>;
-            case "students":
-                return <StudentPage/>;
-            case "categories":
-                return <CategoryPage/>;
-            case "publishers":
-                return <PublisherPage/>;
-            case "bookLoans":
-                console.log("bookLoans")
-                return <BookLoanPage/>;
-            default:
-                return null;
-        }
+    // lấy key hiện tại từ pathname (vd: /books → books)
+    const currentKey = location.pathname.replace("/", "") || "bookLoans";
+
+    const handleMenuSelect = (key) => {
+        navigate(`/${key}`);
+    };
+
+    const titleMap = {
+        books: "sách",
+        authors: "tác giả",
+        students: "sinh viên",
+        categories: "danh mục",
+        publishers: "nhà xuất bản",
+        bookLoans: "mượn trả sách",
     };
 
     return (
-        <Layout style={{minHeight: "100vh"}}>
+        <Layout style={{ minHeight: "100vh" }}>
             <Sider theme="light" width={220}>
                 <div
                     style={{
@@ -47,8 +45,9 @@ export default function LibraryAdmin() {
                 >
                     Thư viện
                 </div>
-                <Sidebar selectedKey={selected} onSelect={setSelected}/>
+                <Sidebar selectedKey={currentKey} onSelect={handleMenuSelect} />
             </Sider>
+
             <Layout>
                 <Header
                     style={{
@@ -59,14 +58,20 @@ export default function LibraryAdmin() {
                         fontWeight: 500,
                     }}
                 >
-                    Quản lý {
-                    selected === "students" ? "sinh viên" :
-                        selected === "books" ? "sách" :
-                            selected === "authors" ? "tác giả" :
-                                selected === "bookLoans" ? "mượn trả sách" :
-                                    "danh mục"}
+                    Quản lý {titleMap[currentKey] || ""}
                 </Header>
-                <Content style={{padding: 24}}>{renderContent()}</Content>
+
+                <Content style={{ padding: 24 }}>
+                    <Routes>
+                        <Route path="/" element={<Navigate to="/bookLoans" />} />
+                        <Route path="/bookLoans" element={<BookLoanPage />} />
+                        <Route path="/books" element={<BookPage />} />
+                        <Route path="/authors" element={<AuthorPage />} />
+                        <Route path="/students" element={<StudentPage />} />
+                        <Route path="/categories" element={<CategoryPage />} />
+                        <Route path="/publishers" element={<PublisherPage />} />
+                    </Routes>
+                </Content>
             </Layout>
         </Layout>
     );
