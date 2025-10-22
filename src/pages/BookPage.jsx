@@ -1,29 +1,14 @@
-import React, { useEffect, useState, useCallback } from "react";
-import {
-    Button,
-    Form,
-    Input,
-    message,
-    Modal,
-    Popconfirm,
-    Space,
-    Table,
-    Select,
-    Row,
-    Col,
-} from "antd";
-import {
-    DeleteOutlined,
-    EditOutlined,
-    PlusOutlined,
-} from "@ant-design/icons";
-import { bookService } from "../api/bookService";
-import { authorService } from "../api/authorService";
-import { categoryService } from "../api/categoryService";
-import { publisherService } from "../api/publisherService";
+import React, {useEffect, useState} from "react";
+import {Button, Col, Form, Input, message, Modal, Popconfirm, Row, Select, Space, Table,} from "antd";
+import {DeleteOutlined, EditOutlined, PlusOutlined,} from "@ant-design/icons";
+import {bookService} from "../api/bookService";
+import {authorService} from "../api/authorService";
+import {categoryService} from "../api/categoryService";
+import {publisherService} from "../api/publisherService";
+import {LANGUAGES} from "../constants/languages";
 
-const { Search } = Input;
-const { Option } = Select;
+const {Search} = Input;
+const {Option} = Select;
 
 export default function BookPage() {
     const [messageApi, contextHolder] = message.useMessage();
@@ -89,7 +74,7 @@ export default function BookPage() {
     const searchAuthors = async (keyword = "") => {
         setLoadingAuthors(true);
         try {
-            const res = await authorService.search({ page: 0, size: 10, search: keyword });
+            const res = await authorService.search({page: 0, size: 10, search: keyword});
             setAuthors(res.content || []);
         } finally {
             setLoadingAuthors(false);
@@ -99,7 +84,7 @@ export default function BookPage() {
     const searchCategories = async (keyword = "") => {
         setLoadingCategories(true);
         try {
-            const res = await categoryService.search({ page: 0, size: 10, search: keyword });
+            const res = await categoryService.search({page: 0, size: 10, search: keyword});
             setCategories(res.content || []);
         } finally {
             setLoadingCategories(false);
@@ -146,7 +131,25 @@ export default function BookPage() {
     const handleEdit = (record) => {
         setIsEdit(true);
         setEditingRecord(record);
-        form.setFieldsValue(record);
+
+        // Lấy danh sách ID từ object con
+        const categoryIds = record.categories?.map((c) => c.id) || [];
+        const authorIds = record.authors?.map((a) => a.id) || [];
+
+        form.setFieldsValue({
+            title: record.title,
+            isbn: record.isbn,
+            publishYear: record.publishYear,
+            language: record.language,
+            quantity: record.quantity,
+            price: record.price,
+            description: record.description,
+            coverImage: record.coverImage,
+            publisherId: record.publisher?.id ?? null,
+            categoryIds,
+            authorIds,
+        });
+
         setIsModalOpen(true);
     };
 
@@ -199,9 +202,9 @@ export default function BookPage() {
 
     // === CỘT BẢNG ===
     const columns = [
-        { title: "ID", dataIndex: "id", key: "id", width: 80 },
-        { title: "Tên sách", dataIndex: "title", key: "title" },
-        { title: "ISBN", dataIndex: "isbn", key: "isbn" },
+        {title: "ID", dataIndex: "id", key: "id", width: 80},
+        {title: "Tên sách", dataIndex: "title", key: "title"},
+        {title: "ISBN", dataIndex: "isbn", key: "isbn"},
         {
             title: "Năm XB",
             dataIndex: "publishYear",
@@ -209,7 +212,16 @@ export default function BookPage() {
             width: 100,
             align: "center",
         },
-        { title: "Ngôn ngữ", dataIndex: "language", key: "language", width: 100 },
+        {
+            title: "Ngôn ngữ",
+            dataIndex: "language",
+            key: "language",
+            width: 120,
+            render: (code) => {
+                const lang = LANGUAGES.find((l) => l.code === code);
+                return lang ? lang.name : code;
+            },
+        },
         {
             title: "Số lượng",
             dataIndex: "quantity",
@@ -233,7 +245,7 @@ export default function BookPage() {
                 <Space>
                     <Button
                         type="link"
-                        icon={<EditOutlined />}
+                        icon={<EditOutlined/>}
                         onClick={() => handleEdit(record)}
                     >
                         Sửa
@@ -244,7 +256,7 @@ export default function BookPage() {
                         okText="Xóa"
                         cancelText="Hủy"
                     >
-                        <Button danger type="link" icon={<DeleteOutlined />}>
+                        <Button danger type="link" icon={<DeleteOutlined/>}>
                             Xóa
                         </Button>
                     </Popconfirm>
@@ -270,9 +282,9 @@ export default function BookPage() {
                     allowClear
                     enterButton="Tìm kiếm"
                     onSearch={handleSearch}
-                    style={{ width: 300 }}
+                    style={{width: 300}}
                 />
-                <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+                <Button type="primary" icon={<PlusOutlined/>} onClick={handleAdd}>
                     Thêm sách
                 </Button>
             </Space>
@@ -308,18 +320,19 @@ export default function BookPage() {
                     form={form}
                     layout="vertical"
                     colon={false}
-                    style={{ marginTop: 8 }}
+                    style={{marginTop: 8}}
                 >
                     {/* === PHẦN 1: THÔNG TIN CƠ BẢN === */}
-                    <h4 style={{ color: "#1677ff", marginBottom: 12 }}>🧾 Thông tin chung</h4>
+                    <h4 style={{color: "#1677ff", marginBottom: 12}}>🧾 Thông tin chung</h4>
                     <Row gutter={[16, 8]}>
+                        {/* === PHẦN 1: THÔNG TIN CƠ BẢN === */}
                         <Col span={12}>
                             <Form.Item
                                 name="title"
                                 label="Tên sách"
-                                rules={[{ required: true, message: "Nhập tên sách" }]}
+                                rules={[{required: true, message: "Title không được để trống"}]}
                             >
-                                <Input placeholder="Nhập tên sách..." />
+                                <Input placeholder="Nhập tên sách..."/>
                             </Form.Item>
                         </Col>
 
@@ -327,44 +340,70 @@ export default function BookPage() {
                             <Form.Item
                                 name="isbn"
                                 label="Mã ISBN"
-                                rules={[{ required: true, message: "Nhập mã ISBN" }]}
+                                rules={[{required: true, message: "ISBN không được để trống"}]}
                             >
-                                <Input placeholder="Nhập mã ISBN..." />
+                                <Input placeholder="Nhập mã ISBN..."/>
                             </Form.Item>
                         </Col>
 
                         <Col span={8}>
-                            <Form.Item name="publishYear" label="Năm xuất bản">
-                                <Input type="number" placeholder="VD: 2025" />
+                            <Form.Item
+                                name="publishYear"
+                                label="Năm xuất bản"
+                                rules={[{required: true, message: "Năm xuất bản không được để trống"}]}
+                            >
+                                <Input type="number" placeholder="VD: 2025"/>
                             </Form.Item>
                         </Col>
 
                         <Col span={8}>
-                            <Form.Item name="language" label="Ngôn ngữ">
-                                <Input placeholder="VD: EN, VI..." />
+                            <Form.Item
+                                name="language"
+                                label="Ngôn ngữ"
+                                rules={[{required: true, message: "Ngôn ngữ không được để trống"}]}
+                            >
+                                <Select
+                                    placeholder="Chọn ngôn ngữ"
+                                    options={LANGUAGES.map((lang) => ({
+                                        value: lang.code,
+                                        label: lang.name,
+                                    }))}
+                                />
                             </Form.Item>
                         </Col>
 
                         <Col span={8}>
-                            <Form.Item name="quantity" label="Số lượng">
-                                <Input type="number" placeholder="VD: 10" />
+                            <Form.Item
+                                name="quantity"
+                                label="Số lượng"
+                                rules={[{required: true, message: "Số lượng không được để trống"}]}
+                            >
+                                <Input type="number" placeholder="VD: 10"/>
                             </Form.Item>
                         </Col>
 
                         <Col span={8}>
-                            <Form.Item name="price" label="Giá (VNĐ)">
-                                <Input type="number" placeholder="VD: 150000" />
+                            <Form.Item
+                                name="price"
+                                label="Giá (VNĐ)"
+                                rules={[{required: true, message: "Giá không được để trống"}]}
+                            >
+                                <Input type="number" placeholder="VD: 150000"/>
                             </Form.Item>
                         </Col>
                     </Row>
 
                     {/* === PHẦN 2: DANH MỤC === */}
-                    <h4 style={{ color: "#1677ff", marginTop: 16, marginBottom: 12 }}>
+                    <h4 style={{color: "#1677ff", marginTop: 16, marginBottom: 12}}>
                         🏷️ Danh mục
                     </h4>
                     <Row gutter={[16, 8]}>
                         <Col span={12}>
-                            <Form.Item name="publisherId" label="Nhà xuất bản">
+                            <Form.Item
+                                name="publisherId"
+                                label="Nhà xuất bản"
+                                rules={[{required: true, message: "Publisher không được để trống"}]}
+                            >
                                 <Select
                                     placeholder="Tìm nhà xuất bản..."
                                     allowClear
@@ -383,10 +422,14 @@ export default function BookPage() {
                         </Col>
 
                         <Col span={12}>
-                            <Form.Item name="categoryIds" label="Thể loại">
+                            <Form.Item
+                                name="categoryIds"
+                                label="Thể loại"
+                                rules={[{required: true, message: "Cần ít nhất một category"}]}
+                            >
                                 <Select
                                     mode="multiple"
-                                    placeholder="Tìm thể loại..."
+                                    placeholder="Chọn thể loại..."
                                     allowClear
                                     showSearch
                                     loading={loadingCategories}
@@ -403,10 +446,14 @@ export default function BookPage() {
                         </Col>
 
                         <Col span={24}>
-                            <Form.Item name="authorIds" label="Tác giả">
+                            <Form.Item
+                                name="authorIds"
+                                label="Tác giả"
+                                rules={[{required: true, message: "Cần ít nhất một author"}]}
+                            >
                                 <Select
                                     mode="multiple"
-                                    placeholder="Tìm tác giả..."
+                                    placeholder="Chọn tác giả..."
                                     allowClear
                                     showSearch
                                     loading={loadingAuthors}
@@ -423,16 +470,23 @@ export default function BookPage() {
                         </Col>
 
                         <Col span={24}>
-                            <Form.Item name="coverImage" label="Ảnh bìa (URL)">
-                                <Input placeholder="https://..." />
+                            <Form.Item
+                                name="coverImage"
+                                label="Ảnh bìa (URL)"
+                                rules={[{required: true, message: "Ảnh bìa không được để trống"}]}
+                            >
+                                <Input placeholder="https://..."/>
                             </Form.Item>
                         </Col>
                     </Row>
 
                     {/* === PHẦN 3: MÔ TẢ === */}
-                    <h4 style={{ color: "#1677ff", marginTop: 16, marginBottom: 12 }}>📝 Mô tả</h4>
-                    <Form.Item name="description">
-                        <Input.TextArea rows={4} placeholder="Nhập mô tả nội dung..." />
+                    <h4 style={{color: "#1677ff", marginTop: 16, marginBottom: 12}}>📝 Mô tả</h4>
+                    <Form.Item
+                        name="description"
+                        rules={[{required: true, message: "Description không được để trống"}]}
+                    >
+                        <Input.TextArea rows={4} placeholder="Nhập mô tả nội dung..."/>
                     </Form.Item>
                 </Form>
 

@@ -1,53 +1,34 @@
-import React, { useEffect, useMemo, useState, useCallback } from "react";
-import {
-    Button,
-    DatePicker,
-    Form,
-    Input,
-    InputNumber,
-    message,
-    Modal,
-    Popconfirm,
-    Select,
-    Space,
-    Table,
-    Tag,
-    Row,
-    Col,
-} from "antd";
-import {
-    PlusOutlined,
-    EditOutlined,
-    DeleteOutlined,
-    ReloadOutlined,
-} from "@ant-design/icons";
+import React, {useEffect, useState} from "react";
+import {Button, Col, DatePicker, Form, Input, message, Modal, Popconfirm, Row, Select, Space, Table, Tag,} from "antd";
+import {DeleteOutlined, EditOutlined, PlusOutlined,} from "@ant-design/icons";
 import dayjs from "dayjs";
-import { bookLoanService } from "../api/bookLoanService";
-import { bookService } from "../api/bookService";
-import { studentService } from "../api/studentService";
+import {bookLoanService} from "../api/bookLoanService";
+import {bookService} from "../api/bookService";
+import {studentService} from "../api/studentService";
 
-const { Search } = Input;
+const {Search} = Input;
+const {Option} = Select;
+
 const STATUS_OPTIONS = [
-    { value: "BORROWED", label: "Đang mượn" },
-    { value: "RETURNED", label: "Đã trả" },
-    { value: "LATE", label: "Trễ hạn" },
+    {value: "BORROWED", label: "Đang mượn"},
+    {value: "RETURNED", label: "Đã trả"},
+    {value: "LATE", label: "Trễ hạn"},
 ];
 
 const statusTag = (status) => {
     const map = {
-        BORROWED: { color: "blue", text: "Đang mượn" },
-        RETURNED: { color: "green", text: "Đã trả" },
-        LATE: { color: "red", text: "Trễ hạn" },
+        BORROWED: {color: "blue", text: "Đang mượn"},
+        RETURNED: {color: "green", text: "Đã trả"},
+        LATE: {color: "red", text: "Trễ hạn"},
     };
-    const s = map[status] || { color: "default", text: status || "-" };
+    const s = map[status] || {color: "default", text: status || "-"};
     return <Tag color={s.color}>{s.text}</Tag>;
 };
-
-const formatDate = (val) => (val ? dayjs(val).format("YYYY-MM-DD") : "");
 
 export default function BookLoanPage() {
     const [messageApi, contextHolder] = message.useMessage();
 
+    // === STATE CƠ BẢN ===
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [pagination, setPagination] = useState({
@@ -55,348 +36,376 @@ export default function BookLoanPage() {
         pageSize: 10,
         total: 0,
     });
-    const [filters, setFilters] = useState({ keyword: "" });
-
+    const [keyword, setKeyword] = useState("");
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isEdit, setIsEdit] = useState(false);
     const [editingRecord, setEditingRecord] = useState(null);
     const [form] = Form.useForm();
 
-    const [bookOptions, setBookOptions] = useState([]);
-    const [studentOptions, setStudentOptions] = useState([]);
-    const [loadingBooks, setLoadingBooks] = useState(false);
+    // === STATE DROPDOWN ===
+    const [students, setStudents] = useState([]);
+    const [books, setBooks] = useState([]);
     const [loadingStudents, setLoadingStudents] = useState(false);
+    const [loadingBooks, setLoadingBooks] = useState(false);
 
-    const fetchData = async (page = 1, size = 10, keyword = "") => {
+    // === DEBOUNCE SEARCH ===
+    let debounceTimer = null;
+    const debounce = (func, delay = 500) => {
+        return (...args) => {
+            if (debounceTimer) clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => func(...args), delay);
+        };
+    };
+
+    // === API LOAD LOANS ===
+    const fetchData = async (page = 1, size = 10, searchValue = "") => {
         setLoading(true);
         try {
             const res = await bookLoanService.search({
                 page: page - 1,
                 size,
-                keyword,
+                search: searchValue || "",
+                sortBy: "id",
+                sortDir: "desc",
             });
-            const content = res?.content ?? [];
-            setData(content);
+
+            setData(res.content || []);
             setPagination({
-                current: res?.pageable?.pageNumber + 1 || 1,
-                pageSize: res?.pageable?.pageSize || 10,
-                total: res?.totalElements || 0,
+                current: (res.pageable?.pageNumber || 0) + 1,
+                pageSize: res.pageable?.pageSize || size,
+                total: res.totalElements || 0,
             });
-        } catch {
-            messageApi.error("Không tải được danh sách mượn trả");
+        } catch (error) {
+            console.error(error);
+            messageApi.error("❌ Không thể tải dữ liệu phiếu mượn");
         } finally {
             setLoading(false);
         }
     };
 
-    useEffect(() => {
-        fetchData();
-    }, []);
-
-    const handleTableChange = (pag) => {
-        fetchData(pag.current, pag.pageSize, filters.keyword);
-    };
-
-    const onSearchKeyword = (value) => {
-        setFilters({ keyword: value });
-        fetchData(1, pagination.pageSize, value);
-    };
-
-    const debounce = useCallback((fn, delay = 500) => {
-        let timer;
-        return (...args) => {
-            if (timer) clearTimeout(timer);
-            timer = setTimeout(() => fn(...args), delay);
-        };
-    }, []);
-
-    const searchBooks = async (keyword = "") => {
-        setLoadingBooks(true);
-        try {
-            const res = await bookService.search({ page: 0, size: 10, keyword });
-            const opts = (res.content || []).map((b) => ({
-                value: b.id,
-                label: b.title,
-            }));
-            setBookOptions(opts);
-        } finally {
-            setLoadingBooks(false);
-        }
-    };
-
-    const searchStudents = async (keyword = "") => {
+    // === API DROPDOWN SEARCH ===
+    const searchStudents = async (kw = "") => {
         setLoadingStudents(true);
         try {
-            const res = await studentService.search({ page: 0, size: 10, keyword });
-            const opts = (res.content || []).map((s) => ({
-                value: s.id,
-                label: `${s.studentCode || ""} - ${s.fullName || s.name || ""}`,
-            }));
-            setStudentOptions(opts);
+            const res = await studentService.search({page: 0, size: 10, search: kw});
+            setStudents(res.content || []);
+        } catch (e) {
+            console.error(e);
         } finally {
             setLoadingStudents(false);
         }
     };
 
-    const debouncedSearchBooks = useMemo(() => debounce(searchBooks), [debounce]);
-    const debouncedSearchStudents = useMemo(
-        () => debounce(searchStudents),
-        [debounce]
-    );
+    const searchBooks = async (kw = "") => {
+        setLoadingBooks(true);
+        try {
+            const res = await bookService.search({page: 0, size: 10, search: kw});
+            setBooks(res.content || []);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoadingBooks(false);
+        }
+    };
 
-    const openCreate = async () => {
+    // === LOAD DỮ LIỆU BAN ĐẦU ===
+    useEffect(() => {
+        fetchData();
+        searchStudents();
+        searchBooks();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // === SEARCH BẢNG ===
+    const handleSearchChange = (e) => {
+        const v = e.target.value;
+        setKeyword(v);
+        debounce(() => fetchData(1, pagination.pageSize, v))();
+    };
+
+    const handleSearch = (value) => {
+        setKeyword(value || "");
+        fetchData(1, pagination.pageSize, value || "");
+    };
+
+    // === TABLE COLUMNS ===
+    const columns = [
+        {
+            title: "ID",
+            dataIndex: "id",
+            width: 80,
+        },
+        {
+            title: "Sinh viên",
+            dataIndex: ["student", "fullName"],
+            render: (_, record) =>
+                record?.student?.fullName ||
+                record?.student?.name ||
+                `SV #${record?.student?.id || "-"}`,
+        },
+        {
+            title: "Sách",
+            dataIndex: ["book", "title"],
+            render: (_, record) => record?.book?.title || `Sách #${record?.book?.id || "-"}`,
+        },
+        {
+            title: "Ngày mượn",
+            dataIndex: "borrowDate",
+            render: (v) => (v ? dayjs(v).format("DD/MM/YYYY") : "-"),
+        },
+        {
+            title: "Hạn trả",
+            dataIndex: "dueDate",
+            render: (v) => (v ? dayjs(v).format("DD/MM/YYYY") : "-"),
+        },
+        {
+            title: "Ngày trả",
+            dataIndex: "returnDate",
+            render: (v) => (v ? dayjs(v).format("DD/MM/YYYY") : "-"),
+        },
+        {
+            title: "Trạng thái",
+            dataIndex: "status",
+            render: (status) => statusTag(status),
+            filters: STATUS_OPTIONS.map((s) => ({text: s.label, value: s.value})),
+            onFilter: (value, record) => record?.status === value,
+        },
+        {
+            title: "Thao tác",
+            key: "actions",
+            width: 140,
+            render: (_, record) => (
+                <Space>
+                    <Button
+                        type="link"
+                        icon={<EditOutlined/>}
+                        onClick={() => openEditModal(record)}
+                    >
+                        Sửa
+                    </Button>
+                    <Popconfirm
+                        title="Xóa phiếu mượn?"
+                        description="Thao tác này không thể hoàn tác"
+                        okText="Xóa"
+                        cancelText="Hủy"
+                        onConfirm={() => handleDelete(record)}
+                    >
+                        <Button type="link" danger icon={<DeleteOutlined/>}>
+                            Xóa
+                        </Button>
+                    </Popconfirm>
+                </Space>
+            ),
+        },
+    ];
+
+    // === HANDLERS MODAL ===
+    const openCreateModal = () => {
         setIsEdit(false);
         setEditingRecord(null);
         form.resetFields();
-        await Promise.all([searchBooks(), searchStudents()]);
-        form.setFieldsValue({ status: "BORROWED" }); // 🆕 mặc định khi thêm mới
-        setIsModalOpen(true);
-    };
-
-    const openEdit = async (record) => {
-        setIsEdit(true);
-        setEditingRecord(record);
-        await Promise.all([searchBooks(), searchStudents()]);
         form.setFieldsValue({
-            studentId: record.studentId,
-            bookId: record.bookId,
-            borrowDate: record.borrowDate ? dayjs(record.borrowDate) : null,
-            dueDate: record.dueDate ? dayjs(record.dueDate) : null,
-            fee: record.fee || 0,
-            status: record.status || "BORROWED", // 🆕 load trạng thái khi edit
+            status: "BORROWED",
+            borrowDate: dayjs(),
         });
         setIsModalOpen(true);
     };
 
-    const closeModal = () => {
+    const openEditModal = (record) => {
+        setIsEdit(true);
+        setEditingRecord(record || null);
         form.resetFields();
-        setIsModalOpen(false);
-        setEditingRecord(null);
-        setIsEdit(false);
+        form.setFieldsValue({
+            studentId: record?.student?.id,
+            bookId: record?.book?.id,
+            borrowDate: record?.borrowDate ? dayjs(record.borrowDate) : null,
+            dueDate: record?.dueDate ? dayjs(record.dueDate) : null,
+            returnDate: record?.returnDate ? dayjs(record.returnDate) : null,
+            status: record?.status || "BORROWED",
+        });
+        setIsModalOpen(true);
     };
 
     const handleSubmit = async () => {
         try {
             const values = await form.validateFields();
-            if (
-                values.dueDate &&
-                values.borrowDate &&
-                values.dueDate.isBefore(values.borrowDate, "day")
-            ) {
-                messageApi.error("Ngày đến hạn phải sau ngày mượn");
-                return;
-            }
-
             const payload = {
                 studentId: values.studentId,
                 bookId: values.bookId,
-                borrowDate: values.borrowDate.format("YYYY-MM-DD"),
-                dueDate: values.dueDate.format("YYYY-MM-DD"),
-                fee: values.fee ?? 0,
-                status: isEdit ? values.status : "BORROWED", // 🆕 chỉ gửi form status khi edit
+                borrowDate: values.borrowDate ? values.borrowDate.toISOString() : null,
+                dueDate: values.dueDate ? values.dueDate.toISOString() : null,
+                returnDate: values.returnDate ? values.returnDate.toISOString() : null,
+                status: values.status,
             };
 
-            if (isEdit) {
+            if (isEdit && editingRecord?.id) {
                 await bookLoanService.update(editingRecord.id, payload);
-                messageApi.success("Cập nhật phiếu mượn thành công");
+                messageApi.success("✅ Cập nhật phiếu mượn thành công");
             } else {
                 await bookLoanService.create(payload);
-                messageApi.success("Tạo phiếu mượn thành công");
+                messageApi.success("✅ Tạo phiếu mượn thành công");
             }
 
-            closeModal();
-            fetchData(pagination.current, pagination.pageSize);
-        } catch (e) {
-            messageApi.error(e?.response?.data?.message || "Lỗi khi lưu phiếu mượn");
+            setIsModalOpen(false);
+            await fetchData(pagination.current, pagination.pageSize, keyword);
+        } catch (error) {
+            if (error?.errorFields) return; // validate fail
+            console.error(error);
+            messageApi.error("❌ Lưu phiếu mượn thất bại");
         }
     };
 
     const handleDelete = async (record) => {
         try {
-            await bookLoanService.remove(record.id);
-            messageApi.success("Xóa phiếu mượn thành công");
-            fetchData(pagination.current, pagination.pageSize);
-        } catch {
-            messageApi.error("Xóa thất bại");
+            await bookLoanService.delete(record?.id);
+            messageApi.success("✅ Đã xóa phiếu mượn");
+            await fetchData(pagination.current, pagination.pageSize, keyword);
+        } catch (e) {
+            console.error(e);
+            messageApi.error("❌ Xóa phiếu mượn thất bại");
         }
     };
 
-    const columns = useMemo(
-        () => [
-            { title: "Mã", dataIndex: "id", width: 80 },
-            {
-                title: "Sinh viên",
-                dataIndex: "studentName",
-                render: (_, r) =>
-                    r.studentName || r.student?.fullName || r.student?.name || "-",
-            },
-            {
-                title: "Sách",
-                dataIndex: "bookTitle",
-                render: (_, r) => r.bookTitle || r.book?.title || "-",
-            },
-            { title: "Ngày mượn", dataIndex: "borrowDate", render: formatDate },
-            { title: "Ngày đến hạn", dataIndex: "dueDate", render: formatDate },
-            {
-                title: "Phí (VNĐ)",
-                dataIndex: "fee",
-                render: (v) => (v ? v.toLocaleString("vi-VN") : "0"),
-                align: "right",
-            },
-            { title: "Trạng thái", dataIndex: "status", render: statusTag },
-            {
-                title: "Thao tác",
-                key: "actions",
-                width: 160,
-                render: (_, record) => (
-                    <Space>
-                        <Button
-                            type="link"
-                            size="small"
-                            icon={<EditOutlined />}
-                            onClick={() => openEdit(record)}
-                        >
-                            Sửa
-                        </Button>
-                        <Popconfirm
-                            title="Xóa phiếu mượn này?"
-                            onConfirm={() => handleDelete(record)}
-                        >
-                            <Button
-                                type="link"
-                                size="small"
-                                danger icon={<DeleteOutlined />}
-                            >
-                                Xóa
-                            </Button>
-                        </Popconfirm>
-                    </Space>
-                ),
-            },
-        ],
-        []
-    );
+    const handleTableChange = (pag) => {
+        setPagination((prev) => ({...prev, current: pag.current, pageSize: pag.pageSize}));
+        fetchData(pag.current, pag.pageSize, keyword);
+    };
+
+    const statusValue = Form.useWatch("status", form);
 
     return (
-        <div>
+        <>
             {contextHolder}
-            <Space style={{ marginBottom: 16 }} wrap>
-                <Search
-                    placeholder="Tìm kiếm theo từ khóa"
-                    allowClear
-                    onSearch={onSearchKeyword}
-                    style={{ width: 320 }}
-                />
-                <Button icon={<ReloadOutlined />} onClick={() => fetchData()}>
-                    Làm mới
-                </Button>
-                <Button type="primary" icon={<PlusOutlined />} onClick={openCreate}>
-                    Thêm mới
-                </Button>
-            </Space>
+
+            <Row gutter={[16, 16]} style={{marginBottom: 16}}>
+                <Col xs={24} sm={12} md={14}>
+                    <Search
+                        placeholder="Tìm kiếm phiếu mượn..."
+                        allowClear
+                        value={keyword}
+                        onChange={handleSearchChange}
+                        onSearch={handleSearch}
+                        enterButton
+                    />
+                </Col>
+                <Col xs={24} sm={12} md={10} style={{textAlign: "right"}}>
+                    <Space wrap>
+                        <Button type="primary" icon={<PlusOutlined/>} onClick={openCreateModal}>
+                            Thêm phiếu mượn
+                        </Button>
+                    </Space>
+                </Col>
+            </Row>
 
             <Table
                 rowKey="id"
                 loading={loading}
                 columns={columns}
                 dataSource={data}
-                pagination={pagination}
+                pagination={{
+                    current: pagination.current,
+                    pageSize: pagination.pageSize,
+                    total: pagination.total,
+                    showSizeChanger: true,
+                    showTotal: (t) => `Tổng ${t} bản ghi`,
+                }}
                 onChange={handleTableChange}
             />
 
             <Modal
-                title={isEdit ? "Cập nhật phiếu mượn" : "Thêm phiếu mượn"}
                 open={isModalOpen}
-                onCancel={closeModal}
+                title={isEdit ? "Cập nhật phiếu mượn" : "Thêm phiếu mượn"}
+                onCancel={() => setIsModalOpen(false)}
                 onOk={handleSubmit}
                 okText={isEdit ? "Lưu" : "Tạo mới"}
-                width={700}
+                cancelText="Hủy"
                 destroyOnClose
             >
-                <Form
-                    form={form}
-                    layout="vertical"
-                    initialValues={{ fee: 0, status: "BORROWED" }}
-                    style={{ marginTop: 8 }}
-                >
-                    <Row gutter={[16, 8]}>
-                        <Col span={12}>
-                            <Form.Item
-                                label="Sinh viên"
-                                name="studentId"
-                                rules={[{ required: true, message: "Vui lòng chọn sinh viên" }]}
-                            >
-                                <Select
-                                    showSearch
-                                    placeholder="Tìm sinh viên..."
-                                    allowClear
-                                    loading={loadingStudents}
-                                    filterOption={false}
-                                    onSearch={debouncedSearchStudents}
-                                    options={studentOptions}
-                                />
-                            </Form.Item>
-                        </Col>
+                <Form form={form} layout="vertical" preserve={false}>
+                    <Form.Item
+                        label="Sinh viên"
+                        name="studentId"
+                        rules={[{required: true, message: "Vui lòng chọn sinh viên"}]}
+                    >
+                        <Select
+                            showSearch
+                            placeholder="Chọn sinh viên"
+                            loading={loadingStudents}
+                            filterOption={false}
+                            onSearch={(v) => searchStudents(v)}
+                            onDropdownVisibleChange={(open) => open && searchStudents("")}
+                            allowClear
+                        >
+                            {(students || []).map((s) => (
+                                <Option key={s.id} value={s.id}>
+                                    {s.fullName || s.name || `Sinh viên #${s.id}`}
+                                </Option>
+                            ))}
+                        </Select>
+                    </Form.Item>
 
-                        <Col span={12}>
-                            <Form.Item
-                                label="Sách"
-                                name="bookId"
-                                rules={[{ required: true, message: "Vui lòng chọn sách" }]}
-                            >
-                                <Select
-                                    showSearch
-                                    placeholder="Tìm sách..."
-                                    allowClear
-                                    loading={loadingBooks}
-                                    filterOption={false}
-                                    onSearch={debouncedSearchBooks}
-                                    options={bookOptions}
-                                />
-                            </Form.Item>
-                        </Col>
+                    <Form.Item
+                        label="Sách"
+                        name="bookId"
+                        rules={[{required: true, message: "Vui lòng chọn sách"}]}
+                    >
+                        <Select
+                            showSearch
+                            placeholder="Chọn sách"
+                            loading={loadingBooks}
+                            filterOption={false}
+                            onSearch={(v) => searchBooks(v)}
+                            onDropdownVisibleChange={(open) => open && searchBooks("")}
+                            allowClear
+                        >
+                            {(books || []).map((b) => (
+                                <Option key={b.id} value={b.id}>
+                                    {b.title || `Sách #${b.id}`}
+                                </Option>
+                            ))}
+                        </Select>
+                    </Form.Item>
 
-                        <Col span={12}>
-                            <Form.Item
-                                label="Ngày mượn"
-                                name="borrowDate"
-                                rules={[{ required: true, message: "Chọn ngày mượn" }]}
-                            >
-                                <DatePicker style={{ width: "100%" }} format="YYYY-MM-DD" />
-                            </Form.Item>
-                        </Col>
+                    <Form.Item
+                        label="Ngày mượn"
+                        name="borrowDate"
+                        rules={[{required: true, message: "Vui lòng chọn ngày mượn"}]}
+                    >
+                        <DatePicker format="DD/MM/YYYY" className="w-100"/>
+                    </Form.Item>
 
-                        <Col span={12}>
-                            <Form.Item
-                                label="Ngày đến hạn"
-                                name="dueDate"
-                                rules={[{ required: true, message: "Chọn ngày đến hạn" }]}
-                            >
-                                <DatePicker style={{ width: "100%" }} format="YYYY-MM-DD" />
-                            </Form.Item>
-                        </Col>
+                    <Form.Item
+                        label="Hạn trả"
+                        name="dueDate"
+                        rules={[{required: true, message: "Vui lòng chọn hạn trả"}]}
+                    >
+                        <DatePicker format="DD/MM/YYYY" className="w-100"/>
+                    </Form.Item>
 
-                        <Col span={12}>
-                            <Form.Item label="Phí (VNĐ)" name="fee">
-                                <InputNumber style={{ width: "100%" }} min={0} step={1000} />
-                            </Form.Item>
-                        </Col>
+                    <Form.Item
+                        label="Trạng thái"
+                        name="status"
+                        rules={[{required: true, message: "Vui lòng chọn trạng thái"}]}
+                    >
+                        <Select placeholder="Chọn trạng thái">
+                            {STATUS_OPTIONS.map((s) => (
+                                <Option key={s.value} value={s.value}>
+                                    {s.label}
+                                </Option>
+                            ))}
+                        </Select>
+                    </Form.Item>
 
-                        {/* 🆕 Hiển thị trạng thái chỉ khi sửa */}
-                        {isEdit && (
-                            <Col span={12}>
-                                <Form.Item
-                                    label="Trạng thái"
-                                    name="status"
-                                    rules={[{ required: true, message: "Chọn trạng thái" }]}
-                                >
-                                    <Select options={STATUS_OPTIONS} placeholder="Chọn trạng thái" />
-                                </Form.Item>
-                            </Col>
-                        )}
-                    </Row>
+                    <Form.Item label="Ngày trả" name="returnDate">
+                        <DatePicker
+                            format="DD/MM/YYYY"
+                            className="w-100"
+                            disabled={statusValue !== "RETURNED"}
+                            placeholder={statusValue === "RETURNED" ? "Chọn ngày trả" : "Chỉ nhập khi trạng thái là 'Đã trả'"}
+                        />
+                    </Form.Item>
                 </Form>
             </Modal>
-        </div>
+        </>
     );
 }
