@@ -251,6 +251,7 @@ export default function BookLoanPage() {
                 render: (_, record) => (
                     <Space>
                         <Button
+                            type="link"
                             size="small"
                             icon={<EditOutlined />}
                             onClick={() => openEdit(record)}
@@ -261,7 +262,11 @@ export default function BookLoanPage() {
                             title="Xóa phiếu mượn này?"
                             onConfirm={() => handleDelete(record)}
                         >
-                            <Button size="small" danger icon={<DeleteOutlined />}>
+                            <Button
+                                type="link"
+                                size="small"
+                                danger icon={<DeleteOutlined />}
+                            >
                                 Xóa
                             </Button>
                         </Popconfirm>
