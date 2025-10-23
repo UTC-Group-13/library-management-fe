@@ -10,14 +10,14 @@ const {Search} = Input;
 const {Option} = Select;
 
 const STATUS_OPTIONS = [
-    {value: "BORROWED", label: "Đang mượn"},
+    {value: "BORROWING", label: "Đang mượn"},
     {value: "RETURNED", label: "Đã trả"},
     {value: "LATE", label: "Trễ hạn"},
 ];
 
 const statusTag = (status) => {
     const map = {
-        BORROWED: {color: "blue", text: "Đang mượn"},
+        BORROWING: {color: "blue", text: "Đang mượn"},
         RETURNED: {color: "green", text: "Đã trả"},
         LATE: {color: "red", text: "Trễ hạn"},
     };
@@ -205,7 +205,7 @@ export default function BookLoanPage() {
         setEditingRecord(null);
         form.resetFields();
         form.setFieldsValue({
-            status: "BORROWED",
+            status: "BORROWING",
             borrowDate: dayjs(),
         });
         setIsModalOpen(true);
@@ -221,7 +221,7 @@ export default function BookLoanPage() {
             borrowDate: record?.borrowDate ? dayjs(record.borrowDate) : null,
             dueDate: record?.dueDate ? dayjs(record.dueDate) : null,
             returnDate: record?.returnDate ? dayjs(record.returnDate) : null,
-            status: record?.status || "BORROWED",
+            status: record?.status || "BORROWING",
         });
         setIsModalOpen(true);
     };
