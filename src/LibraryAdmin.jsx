@@ -26,7 +26,10 @@ export default function LibraryAdmin() {
   useEffect(() => {
     const fetchUserInfo = async () => {
       try {
+        console.log("111");
+        
         const data = await adminService.info();
+        console.log("222");
         setUsername(data.fullName || data.username);
         setRole(data.role);
         localStorage.setItem("role", data.role);
