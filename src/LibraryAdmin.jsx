@@ -60,6 +60,7 @@ export default function LibraryAdmin() {
     categories: "danh mục",
     publishers: "nhà xuất bản",
     bookLoans: "mượn trả sách",
+    reports: "báo cáo",
   };
 
   const menuItems = [{ key: "logout", icon: <LogoutOutlined />, label: "Đăng xuất" }];

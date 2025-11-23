@@ -24,7 +24,7 @@ export default function Sidebar({ selectedKey, onSelect, role }) {
   const filteredItems =
     role === "ADMIN"
       ? allItems
-      : allItems.filter((item) => ["bookLoans", "books"].includes(item.key));
+      : allItems.filter((item) => ["bookLoans", "books", "reports"].includes(item.key));
 
   return (
     <Menu

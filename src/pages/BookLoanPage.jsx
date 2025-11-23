@@ -212,6 +212,7 @@ export default function BookLoanPage() {
     };
 
     const openEditModal = (record) => {
+        console.log(record, "record edit modal")
         setIsEdit(true);
         setEditingRecord(record || null);
         form.resetFields();
@@ -321,7 +322,7 @@ export default function BookLoanPage() {
                 cancelText="Hủy"
                 destroyOnClose
             >
-                <Form form={form} layout="vertical" preserve={false}>
+                <Form form={form} layout="vertical" >
                     <Form.Item
                         label="Sinh viên"
                         name="studentId"
