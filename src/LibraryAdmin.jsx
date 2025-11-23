@@ -10,6 +10,7 @@ import CategoryPage from "./pages/CategoryPage";
 import PublisherPage from "./pages/PublisherPage";
 import BookLoanPage from "./pages/BookLoanPage";
 import { adminService } from "./api/adminService";
+import ReportPage from "./pages/ReportPage.jsx";
 
 const { Sider, Content, Header } = Layout;
 const { Text } = Typography;
@@ -122,6 +123,7 @@ export default function LibraryAdmin() {
             <Route path="/" element={<Navigate to="/bookLoans" />} />
             <Route path="/bookLoans" element={<BookLoanPage />} />
             <Route path="/books" element={<BookPage />} />
+            <Route path="/reports" element={<ReportPage />} />
             {isAdmin && (
               <>
                 <Route path="/authors" element={<AuthorPage />} />

@@ -1,13 +1,22 @@
 import React, { useEffect, useState } from "react";
-import { Button, DatePicker, Form, Input, message, Modal, Popconfirm, Space, Table, } from "antd";
+import {
+    Button,
+    Form,
+    Input,
+    message,
+    Modal,
+    Popconfirm,
+    Space,
+    Table,
+} from "antd";
 import { studentService } from "../api/studentService";
 import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
-// import dayjs from "dayjs";
 
 const { Search } = Input;
 
 export default function StudentPage() {
-    const [messageApi, contextHolder] = message.useMessage(); // ✅ Tạo instance message
+
+    const [messageApi, contextHolder] = message.useMessage();
 
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -16,13 +25,16 @@ export default function StudentPage() {
         pageSize: 10,
         total: 0,
     });
-    const [keyword, setKeyword] = useState("");
-    // const [isModalOpen, setIsModalOpen] = useState(false);
-    // const [isEdit, setIsEdit] = useState(false);
-    // const [editingRecord, setEditingRecord] = useState(null);
-    // const [form] = Form.useForm();
 
-    // === GỌI API PHÂN TRANG ===
+    const [keyword, setKeyword] = useState("");
+
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isEdit, setIsEdit] = useState(false);
+    const [editingRecord, setEditingRecord] = useState(null);
+
+    const [form] = Form.useForm();
+
+    // === FETCH API ===
     const fetchData = async (page = 1, size = 10, searchValue = "") => {
         setLoading(true);
         try {
@@ -58,109 +70,114 @@ export default function StudentPage() {
         fetchData(1, pagination.pageSize, value);
     };
 
-    // === THÊM MỚI ===
-    // const handleAdd = () => {
-    //     setIsEdit(false);
-    //     setEditingRecord(null);
-    //     form.resetFields();
-    //     setIsModalOpen(true);
-    // };
+    // === ADD ===
+    const handleAdd = () => {
+        setIsEdit(false);
+        setEditingRecord(null);
+        form.resetFields();
+        setIsModalOpen(true);
+    };
 
-    // === SỬA ===
-    // const handleEdit = (record) => {
-    //     setIsEdit(true);
-    //     setEditingRecord(record);
-    //     form.setFieldsValue({
-    //         ...record,
-    //         birthDate: record.birthDate ? dayjs(record.birthDate) : null,
-    //     });
-    //     setIsModalOpen(true);
-    // };
+    // === EDIT ===
+    const handleEdit = (record) => {
+        setIsEdit(true);
+        setEditingRecord(record);
+        form.setFieldsValue(record);
+        setIsModalOpen(true);
+    };
 
-    // === XOÁ ===
-    // const handleDelete = async (id) => {
-    //     try {
-    //         await studentService.delete(id);
-    //         messageApi.success("🗑️ Xóa sinh viên thành công!");
-    //         await fetchData(pagination.current, pagination.pageSize, keyword);
-    //     } catch (error) {
-    //         console.error(error);
-    //         messageApi.error(
-    //             error?.response?.data?.message || "❌ Lỗi khi xóa sinh viên!"
-    //         );
-    //     }
-    // };
+    // === DELETE ===
+    const handleDelete = async (id) => {
+        try {
+            await studentService.delete(id);
+            messageApi.success("🗑️ Xóa sinh viên thành công!");
+            await fetchData(pagination.current, pagination.pageSize, keyword);
+        } catch (error) {
+            console.error(error);
+            messageApi.error(
+                error?.response?.data?.message || "❌ Lỗi khi xóa sinh viên!"
+            );
+        }
+    };
 
-    // === SUBMIT FORM (THÊM HOẶC CẬP NHẬT) ===
-    // const handleSubmit = async () => {
-    //     try {
-    //         const values = await form.validateFields();
-    //         const payload = {
-    //             fullName: values.fullName,
-    //             birthDate: values.birthDate?.format("YYYY-MM-DD"),
-    //             nationality: values.nationality,
-    //             biography: values.biography,
-    //             email: values.email,
-    //         };
-    //
-    //         if (isEdit && editingRecord) {
-    //             await studentService.update(editingRecord.id, payload);
-    //             messageApi.success("✅ Cập nhật sinh viên thành công!");
-    //         } else {
-    //             await studentService.create(payload);
-    //             messageApi.success("✅ Thêm sinh viên thành công!");
-    //         }
-    //
-    //         await fetchData(pagination.current, pagination.pageSize, keyword);
-    //         form.resetFields();
-    //         setIsModalOpen(false);
-    //     } catch (error) {
-    //         console.error(error);
-    //         messageApi.error(
-    //             error?.response?.data?.message || "❌ Lỗi khi lưu sinh viên!"
-    //         );
-    //     }
-    // };
+    // === SUBMIT ===
+    const handleSubmit = async () => {
+        try {
+            const values = await form.validateFields();
 
-    // === CỘT BẢNG ===
+            const payload = {
+                code: values.code,
+                fullName: values.fullName,
+                email: values.email,
+                phone: values.phone,
+                departmentCode: values.departmentCode,
+                classCode: values.classCode,
+            };
+
+            if (isEdit && editingRecord) {
+                await studentService.update(editingRecord.id, payload);
+                messageApi.success("✅ Cập nhật sinh viên thành công!");
+            } else {
+                await studentService.create(payload);
+                messageApi.success("✅ Thêm sinh viên thành công!");
+            }
+
+            await fetchData(pagination.current, pagination.pageSize, keyword);
+            form.resetFields();
+            setIsModalOpen(false);
+        } catch (error) {
+            console.error(error);
+
+            const apiErrors = error?.response?.data?.data;
+            if (apiErrors && typeof apiErrors === "object") {
+                const formErrors = Object.entries(apiErrors).map(([field, message]) => ({
+                    name: field,
+                    errors: [message],
+                }));
+                form.setFields(formErrors);
+                messageApi.error("❌ Dữ liệu không hợp lệ!");
+            } else {
+                messageApi.error(error?.response?.data?.message || "❌ Lỗi khi lưu sinh viên!");
+            }
+        }
+    };
+
+    // === COLUMNS ===
     const columns = [
-        { title: "ID", dataIndex: "id", key: "id", width: 80 },
-        { title: "Mã sinh viên", dataIndex: "code", key: "code" },
-        { title: "Họ và tên", dataIndex: "fullName", key: "fullName" },
-        { title: "Email", dataIndex: "email", key: "email" },
-        { title: "Mã ngành", dataIndex: "departmentCode", key: "departmentCode" },
-        { title: "Mã lớp", dataIndex: "classCode", key: "classCode" },
-        // {
-        //     title: "Hành động",
-        //     key: "action",
-        //     width: 180,
-        //     render: (_, record) => (
-        //         <Space>
-        //             <Button
-        //                 type="link"
-        //                 icon={<EditOutlined />}
-        //                 onClick={() => handleEdit(record)}
-        //             >
-        //                 Sửa
-        //             </Button>
-        //             <Popconfirm
-        //                 title="Xác nhận xoá?"
-        //                 onConfirm={() => handleDelete(record.id)}
-        //                 okText="Xóa"
-        //                 cancelText="Hủy"
-        //             >
-        //                 <Button danger type="link" icon={<DeleteOutlined />}>
-        //                     Xóa
-        //                 </Button>
-        //             </Popconfirm>
-        //         </Space>
-        //     ),
-        // },
+        { title: "ID", dataIndex: "id", width: 60 },
+        { title: "Mã SV", dataIndex: "code" },
+        { title: "Họ tên", dataIndex: "fullName" },
+        { title: "Email", dataIndex: "email" },
+        { title: "Điện thoại", dataIndex: "phone" },
+        { title: "Mã ngành", dataIndex: "departmentCode" },
+        { title: "Mã lớp", dataIndex: "classCode" },
+        {
+            title: "Hành động",
+            width: 180,
+            render: (_, record) => (
+                <Space>
+                    <Button type="link" icon={<EditOutlined />} onClick={() => handleEdit(record)}>
+                        Sửa
+                    </Button>
+                    <Popconfirm
+                        title="Xác nhận xoá?"
+                        onConfirm={() => handleDelete(record.id)}
+                        okText="Xóa"
+                        cancelText="Hủy"
+                    >
+                        <Button danger type="link" icon={<DeleteOutlined />}>
+                            Xóa
+                        </Button>
+                    </Popconfirm>
+                </Space>
+            ),
+        },
     ];
 
     return (
         <div>
-            {contextHolder} {/* ✅ Bắt buộc có dòng này */}
+            {contextHolder}
+
             <Space
                 style={{
                     marginBottom: 16,
@@ -175,9 +192,9 @@ export default function StudentPage() {
                     onSearch={handleSearch}
                     style={{ width: 300 }}
                 />
-                {/*<Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>*/}
-                {/*    Thêm sinh viên*/}
-                {/*</Button>*/}
+                <Button type="primary" icon={<PlusOutlined />} onClick={handleAdd}>
+                    Thêm sinh viên
+                </Button>
             </Space>
 
             <Table
@@ -191,52 +208,45 @@ export default function StudentPage() {
                     total: pagination.total,
                     showSizeChanger: true,
                     showTotal: (total) => `Tổng ${total} sinh viên`,
-                    onChange: (page, pageSize) =>
-                        fetchData(page, pageSize, keyword),
+                    onChange: (page, size) => fetchData(page, size, keyword),
                 }}
             />
 
-            {/*<Modal*/}
-            {/*    title={isEdit ? "Cập nhật sinh viên" : "Thêm sinh viên"}*/}
-            {/*    open={isModalOpen}*/}
-            {/*    onCancel={() => setIsModalOpen(false)}*/}
-            {/*    onOk={handleSubmit}*/}
-            {/*    okText="Lưu"*/}
-            {/*    cancelText="Hủy"*/}
-            {/*    destroyOnClose={true}*/}
-            {/*>*/}
-            {/*    <Form form={form} layout="vertical">*/}
-            {/*        <Form.Item*/}
-            {/*            name="code"*/}
-            {/*            label="Mã sinh viên"*/}
-            {/*            rules={[{ required: true, message: "Vui lòng nhập mã" }]}*/}
-            {/*        >*/}
-            {/*            <Input />*/}
-            {/*        </Form.Item>*/}
-            {/*        <Form.Item*/}
-            {/*            name="fullName"*/}
-            {/*            label="Tên sinh viên"*/}
-            {/*            rules={[{ required: true, message: "Vui lòng nhập tên" }]}*/}
-            {/*        >*/}
-            {/*            <Input />*/}
-            {/*        </Form.Item>*/}
-            {/*        <Form.Item*/}
-            {/*            name="email"*/}
-            {/*            label="Email"*/}
-            {/*            rules={[{ required: true, message: "Vui lòng nhập email" }]}*/}
-            {/*        >*/}
-            {/*        </Form.Item>*/}
-            {/*        <Form.Item name="nationality" label="Quốc tịch">*/}
-            {/*            <Input />*/}
-            {/*        </Form.Item>*/}
-            {/*        <Form.Item name="biography" label="Tiểu sử">*/}
-            {/*            <Input.TextArea rows={3} />*/}
-            {/*        </Form.Item>*/}
-            {/*        <Form.Item name="email" label="Email">*/}
-            {/*            <Input type="email" />*/}
-            {/*        </Form.Item>*/}
-            {/*    </Form>*/}
-            {/*</Modal>*/}
+            <Modal
+                title={isEdit ? "Cập nhật sinh viên" : "Thêm sinh viên"}
+                open={isModalOpen}
+                onCancel={() => setIsModalOpen(false)}
+                onOk={handleSubmit}
+                okText="Lưu"
+                cancelText="Hủy"
+                destroyOnClose
+            >
+                <Form form={form} layout="vertical">
+                    <Form.Item name="code" label="Mã sinh viên" rules={[{ required: true }]}>
+                        <Input />
+                    </Form.Item>
+
+                    <Form.Item name="fullName" label="Tên sinh viên" rules={[{ required: true }]}>
+                        <Input />
+                    </Form.Item>
+
+                    <Form.Item name="email" label="Email" rules={[{ required: true }]}>
+                        <Input type="email" />
+                    </Form.Item>
+
+                    <Form.Item name="phone" label="Số điện thoại">
+                        <Input />
+                    </Form.Item>
+
+                    <Form.Item name="departmentCode" label="Mã ngành">
+                        <Input />
+                    </Form.Item>
+
+                    <Form.Item name="classCode" label="Mã lớp">
+                        <Input />
+                    </Form.Item>
+                </Form>
+            </Modal>
         </div>
     );
 }

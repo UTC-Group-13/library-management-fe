@@ -14,4 +14,18 @@ export const studentService = {
         // Giả định backend trả về { content, totalElements, totalPages }
         return res.data;
     },
+
+    create: async (data) => {
+        const res = await instance.post(BASE_URL, data);
+        return res.data;
+    },
+
+    update: async (id, data) => {
+        const res = await instance.put(`${BASE_URL}/${id}`, data);
+        return res.data;
+    },
+
+    delete: async (id) => {
+        await instance.delete(`${BASE_URL}/${id}`);
+    }
 };

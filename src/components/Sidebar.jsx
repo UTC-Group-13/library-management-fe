@@ -17,6 +17,7 @@ export default function Sidebar({ selectedKey, onSelect, role }) {
     { key: "students", icon: <TeamOutlined />, label: "Quản lý sinh viên" },
     { key: "categories", icon: <AppstoreOutlined />, label: "Quản lý danh mục" },
     { key: "publishers", icon: <BankOutlined />, label: "Quản lý nhà xuất bản" },
+    { key: "reports", icon: <AppstoreOutlined />, label: "Báo cáo" },
   ];
 
   // Lọc menu theo role
