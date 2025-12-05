@@ -322,7 +322,7 @@ export default function BookLoanPage() {
                 cancelText="Hủy"
                 destroyOnClose
             >
-                <Form form={form} layout="vertical" >
+                <Form form={form} layout="vertical">
                     <Form.Item
                         label="Sinh viên"
                         name="studentId"
@@ -383,28 +383,30 @@ export default function BookLoanPage() {
                         <DatePicker format="DD/MM/YYYY" className="w-100"/>
                     </Form.Item>
 
-                    <Form.Item
-                        label="Trạng thái"
-                        name="status"
-                        rules={[{required: true, message: "Vui lòng chọn trạng thái"}]}
-                    >
-                        <Select placeholder="Chọn trạng thái">
-                            {STATUS_OPTIONS.map((s) => (
-                                <Option key={s.value} value={s.value}>
-                                    {s.label}
-                                </Option>
-                            ))}
-                        </Select>
-                    </Form.Item>
+                    {isEdit && (
+                        <Form.Item
+                            label="Trạng thái"
+                            name="status"
+                            rules={[{required: true, message: "Vui lòng chọn trạng thái"}]}
+                        >
+                            <Select placeholder="Chọn trạng thái">
+                                {STATUS_OPTIONS.map((s) => (
+                                    <Option key={s.value} value={s.value}>
+                                        {s.label}
+                                    </Option>
+                                ))}
+                            </Select>
+                        </Form.Item>
+                    )}
 
-                    <Form.Item label="Ngày trả" name="returnDate">
+                    {isEdit && (<Form.Item label="Ngày trả" name="returnDate">
                         <DatePicker
                             format="DD/MM/YYYY"
                             className="w-100"
                             disabled={statusValue !== "RETURNED"}
                             placeholder={statusValue === "RETURNED" ? "Chọn ngày trả" : "Chỉ nhập khi trạng thái là 'Đã trả'"}
                         />
-                    </Form.Item>
+                    </Form.Item>)}
                 </Form>
             </Modal>
         </>
