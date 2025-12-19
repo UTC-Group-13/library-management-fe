@@ -161,7 +161,7 @@ export default function BookPage() {
             await fetchData(pagination.current, pagination.pageSize, keyword);
         } catch (error) {
             console.error(error);
-            messageApi.error(error?.response?.data?.message || "❌ Lỗi khi xóa sách!");
+            messageApi.error(error?.response?.data?.message ?? error?.response?.data?.data ?? "❌ Lỗi khi xóa sách!");
         }
     };
 
