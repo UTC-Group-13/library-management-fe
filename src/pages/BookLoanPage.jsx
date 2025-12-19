@@ -258,7 +258,7 @@ export default function BookLoanPage() {
 
     const handleDelete = async (record) => {
         try {
-            await bookLoanService.delete(record?.id);
+            await bookLoanService.remove(record?.id);
             messageApi.success("✅ Đã xóa phiếu mượn");
             await fetchData(pagination.current, pagination.pageSize, keyword);
         } catch (e) {
